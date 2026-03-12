@@ -134,7 +134,7 @@ def cmd_generate(args):
         print(f"Error: {e}")
         sys.exit(1)
 
-    out_dir = Path(args.output)
+    out_dir = Path(args.out_dir)
     print(f"Generating static site from {sessions_dir} -> {out_dir} ...")
     process_directory(sessions_dir, out_dir)
 
@@ -173,7 +173,7 @@ def main():
              "(default: ~/.claude/projects/)",
     )
     p_gen.add_argument(
-        "output", nargs="?", default="_site",
+        "-o", "--out-dir", default="_site", metavar="DIR",
         help="output directory (default: _site/)",
     )
 
