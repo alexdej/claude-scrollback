@@ -1,0 +1,25 @@
+# Generated HTML (built by viewer.py or Actions, not committed)
+*.html
+
+# Local session files (not for the repo)
+jsonl/
+*.jsonl
+
+# Claude Code local settings
+.claude/
+
+# Build output
+_site/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+
+# OS
+.DS_Store
+Thumbs.db
