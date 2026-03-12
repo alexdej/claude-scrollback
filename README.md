@@ -1,69 +1,105 @@
 # scrollback
 
-A viewer for [Claude Code](https://claude.ai/claude-code) session transcripts. Converts `.jsonl` session files into readable, interactive HTML — either as a static site generator or a local web server you point at a directory.
+A lightweight viewer for [Claude Code](https://claude.ai/claude-code) session transcripts. Converts `.jsonl` session files into readable, interactive HTML — with a built-in server for browsing or a static site generator for archiving.
 
-![index page showing a list of sessions with metadata pills](docs/screenshot-index.png)
+Positioned as the one you reach for when you just want a quick peek, with no heavy dependencies or file watchers. Pure Python stdlib.
 
-## What it does
+## Install
 
-Claude Code saves every session to a `.jsonl` file (typically in `~/.claude/projects/`). These files contain the full conversation: user messages, Claude's responses, tool calls and their results, token usage, and session metadata.
+```bash
+pip install claude-scrollback
+```
 
-`scrollback` turns those files into something you can actually read — useful for revisiting the reasoning behind a commit, a design decision, or a tricky debugging session.
+Or clone and run without installing:
 
-Each session renders as a threaded conversation with:
-- **Human messages** and **Claude responses** in distinct styled bubbles
-- **Tool calls** (Read, Edit, Bash, Glob, etc.) collapsible with their full inputs
-- **Tool results** collapsible, truncated for large outputs
-- **Thinking blocks** collapsible when present (note: Claude Code redacts the thinking text, preserving only the cryptographic signature)
-- **Context compaction markers** when Claude Code summarised the context mid-session
-- **API errors** (rate limits, auth failures) surfaced inline
-- **Token usage** shown per response
-- **Session metadata**: working directory, git branch, start/end time, message and tool call counts
+```bash
+git clone https://github.com/alexdej/claude-scrollback
+cd claude-scrollback
+python -m claude_scrollback [args]
+```
 
-The index page lists all sessions sorted newest-first with a live filter box.
+Or grab just `claude_scrollback/generator.py` — it's self-contained and works standalone:
+
+```bash
+python generator.py <session.jsonl>
+python generator.py <sessions-dir/>
+```
 
 ## Usage
 
-### Local web server (recommended)
+### Quick start
 
 ```bash
-python server.py path/to/jsonl/directory/
-python server.py path/to/jsonl/directory/ 9000   # custom port, default is 8080
+# Browse all your Claude Code sessions (uses ~/.claude/projects/ automatically)
+scrollback
+
+# Browse sessions for the current project directory
+scrollback .
+
+# Browse sessions for a specific project
+scrollback ~/projects/myapp
+
+# View a single session file
+scrollback path/to/session.jsonl
 ```
 
-Open `http://localhost:8080` in your browser. The server regenerates HTML on every request, so newly added session files appear immediately without restarting.
+All directory modes start a local server and open your browser automatically.
 
-Stop with `Ctrl+C`.
+### Options
 
-### Static site generator
+```
+scrollback [path] [--port PORT] [--no-browser] [--build [OUTDIR]]
+
+path            .jsonl file, sessions directory, or project directory
+                default: ~/.claude/projects/
+
+--port PORT     server port (default: 8080)
+--no-browser    don't open browser automatically
+--build [OUTDIR] generate static HTML instead of serving
+                 default output: _site/
+```
+
+### Examples
 
 ```bash
-# Single file
-python viewer.py session.jsonl
-python viewer.py session.jsonl output.html
-
-# Whole directory — writes index.html + one HTML per session
-python viewer.py path/to/jsonl/directory/
+scrollback                          # all projects, port 8080, opens browser
+scrollback . --port 9000            # current project, custom port
+scrollback . --no-browser           # start server without opening browser
+scrollback . --build                # generate static HTML to ./_site/
+scrollback . --build ~/my-archive/  # generate to a custom directory
+scrollback session.jsonl            # convert single file, open in browser
 ```
 
-## Where Claude Code stores sessions
+### Path resolution
 
-Sessions live under `~/.claude/projects/`, organised by project path:
+When you pass a project directory (like `.`), scrollback maps it to the corresponding Claude Code sessions folder automatically. Claude Code stores sessions under `~/.claude/projects/` with the project path encoded as the directory name (colons, slashes, and backslashes replaced with `-`):
 
 ```
-~/.claude/projects/
-  C--Users-you-Projects-myapp/
-    abc123.jsonl
-    def456.jsonl
-  C--Users-you-Projects-other/
-    ...
+~/projects/myapp  →  ~/.claude/projects/-home-you-projects-myapp/
+C:\Users\you\myapp  →  ~/.claude/projects/C--Users-you-myapp/
 ```
 
-Point scrollback at any of those subdirectories.
+If the path you give already contains `.jsonl` files (directly or in subdirectories), it's used as-is.
 
-## Linking sessions to git commits
+## What it renders
 
-A session file on its own is useful, but becomes much more useful when you can connect it to the code it produced. One convention that works well: include the session ID as a git trailer when committing work done in a Claude Code session.
+Each session page shows:
+
+- **Human messages** and **Claude responses** in distinct styled bubbles
+- **Tool calls** (Read, Edit, Bash, Glob, Write, etc.) collapsible with full inputs
+- **Tool results** collapsible, truncated for large outputs
+- **Thinking blocks** collapsible when present
+- **Context compaction markers** when Claude Code summarised the context mid-session
+- **API errors** (rate limits, auth failures) surfaced inline
+- **Token usage** per response
+- **Session metadata**: working directory, git branch, start/end time, message and tool call counts
+- **Resume command** — one click copies `cd <project> && claude --resume <session-id>` to clipboard
+
+The index page lists all sessions sorted newest-first with a live filter box and per-session metadata pills.
+
+## Linking sessions to commits
+
+Include the session ID as a git trailer when committing AI-assisted work:
 
 ```
 Fix authentication token refresh race condition
@@ -71,22 +107,36 @@ Fix authentication token refresh race condition
 Claude-Session: abc123de-f456-7890-abcd-ef1234567890
 ```
 
-Git trailers are machine-readable, so you can later do:
+The session ID is shown in the metadata card on each session page with a 📋 copy button. The resume command (also one-click copyable) lets you pick up the conversation right where it left off.
 
 ```bash
+# Find all AI-assisted commits
 git log --grep="Claude-Session:"
 ```
 
-The session ID appears in the metadata card at the top of each session page (click 📋 to copy it).
+## Session directory layout
 
-## Requirements
+Claude Code organises sessions by project under `~/.claude/projects/`:
 
-Python 3.8+, standard library only. No dependencies to install.
+```
+~/.claude/projects/
+  C--Users-you-projects-myapp/
+    abc123.jsonl
+    def456.jsonl
+  -home-you-projects-other/
+    ...
+```
+
+`scrollback` handles both flat directories (one project) and nested trees (all projects).
 
 ## Example sessions
 
-The `example/` directory contains three short synthetic sessions demonstrating the viewer's rendering across different scenarios (file reads, edits, bash commands, multi-turn conversations).
+The `example/projects/` directory contains synthetic sessions demonstrating the viewer across different scenarios. To browse them:
 
 ```bash
-python server.py example/
+scrollback example/projects/
 ```
+
+## Requirements
+
+Python 3.8+, standard library only.

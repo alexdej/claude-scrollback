@@ -1,15 +1,13 @@
 #!/usr/bin/env python3
 """
-Claude JSONL Conversation Viewer
-Converts a Claude Code session JSONL file to a readable HTML page,
-or a directory of JSONL files to a browsable index + individual pages.
+claude-scrollback: generator
+Converts Claude Code .jsonl session files to readable HTML.
 
-Usage:
-  python viewer.py <session.jsonl> [output.html]
-  python viewer.py <directory/>
+Standalone usage (copy this file anywhere, no install needed):
+  python generator.py <session.jsonl> [output.html]
+  python generator.py <sessions-dir/> [output-dir/]
 
-Single file: writes <session>.html next to the input (or to output.html).
-Directory:   writes index.html + one HTML per JSONL file inside the directory.
+Pure Python stdlib, no dependencies.
 """
 
 import sys
@@ -363,8 +361,8 @@ def render_message(m, tool_results_map):
     return "".join(parts)
 
 
-def generate_html(jsonl_path):
-    """Parse JSONL and generate full HTML string."""
+def generate_html(jsonl_path, out_path=None):
+    """Parse JSONL and generate HTML. Writes to out_path if given, else returns the string."""
     messages = []
     with open(jsonl_path, encoding="utf-8") as f:
         for line in f:
@@ -563,6 +561,8 @@ def generate_html(jsonl_path):
     .session-value {{ font-size: 13px; font-family: var(--font-mono); color: var(--text); word-break: break-all; }}
     .session-id-row {{ display: flex; align-items: center; gap: 6px; }}
     .session-id-row .session-value {{ white-space: nowrap; overflow: hidden; text-overflow: ellipsis; word-break: normal; }}
+    .session-resume {{ grid-column: 1 / -1; }}
+    .resume-cmd {{ font-size: 12px; }}
     .copy-btn {{
       flex-shrink: 0;
       background: var(--surface2);
@@ -909,7 +909,7 @@ def generate_html(jsonl_path):
       <span class="session-label">Session ID</span>
       <div class="session-id-row">
         <span class="session-value" title="{escape(session_id)}">{escape(session_id)}</span>
-        <button class="copy-btn" onclick="copySessionId(this, '{escape(session_id)}')">📋</button>
+        <button class="copy-btn" onclick="copyText(this, '{escape(session_id)}')">📋</button>
       </div>
     </div>
     <div class="session-field">
@@ -932,6 +932,16 @@ def generate_html(jsonl_path):
       <span class="session-label">Tool calls</span>
       <span class="session-value">{tool_calls}</span>
     </div>
+    {(
+      '<div class="session-field session-resume">'
+      '<span class="session-label">Resume</span>'
+      '<div class="session-id-row">'
+      '<span class="session-value resume-cmd" title="' + escape(f"cd {cwd} && claude --resume {session_id}") + '">'
+      + escape(f"cd {cwd} && claude --resume {session_id}") +
+      '</span>'
+      '<button class="copy-btn" onclick="copyText(this, \'' + escape(f"cd {cwd} && claude --resume {session_id}") + '\')">📋</button>'
+      '</div></div>'
+    ) if cwd and session_id else ''}
   </div>
 
   <div id="conversation">
@@ -941,8 +951,8 @@ def generate_html(jsonl_path):
 </main>
 
 <script>
-  function copySessionId(btn, id) {{
-    navigator.clipboard.writeText(id).then(() => {{
+  function copyText(btn, text) {{
+    navigator.clipboard.writeText(text).then(() => {{
       const orig = btn.textContent;
       btn.textContent = '✓';
       btn.style.color = '#5db870';
@@ -982,6 +992,8 @@ def generate_html(jsonl_path):
 </body>
 </html>
 """
+    if out_path is not None:
+        Path(out_path).write_text(html_content, encoding="utf-8")
     return html_content
 
 
@@ -1345,8 +1357,8 @@ def process_directory(dir_path, out_path=None):
 def main():
     if len(sys.argv) < 2:
         print("Usage:")
-        print("  python viewer.py <session.jsonl> [output.html]")
-        print("  python viewer.py <directory/> [output_dir/]")
+        print("  python generator.py <session.jsonl> [output.html]")
+        print("  python generator.py <sessions-dir/> [output-dir/]")
         sys.exit(1)
 
     target = Path(sys.argv[1])
@@ -1358,14 +1370,9 @@ def main():
         out = Path(sys.argv[2]) if len(sys.argv) >= 3 else None
         process_directory(target, out)
     else:
-        if len(sys.argv) >= 3:
-            out_path = Path(sys.argv[2])
-        else:
-            out_path = target.with_suffix(".html")
-
+        out_path = Path(sys.argv[2]) if len(sys.argv) >= 3 else target.with_suffix(".html")
         print(f"Reading {target}...")
-        html_content = generate_html(target)
-        out_path.write_text(html_content, encoding="utf-8")
+        generate_html(target, out_path)
         print(f"Written to {out_path}")
 
 

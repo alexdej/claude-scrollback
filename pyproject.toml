@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.backends.legacy:build"
+
+[project]
+name = "claude-scrollback"
+version = "0.1.0"
+description = "Lightweight viewer for Claude Code session transcripts"
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.8"
+keywords = ["claude", "anthropic", "claude-code", "ai", "transcript", "viewer"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Environment :: Web Environment",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Topic :: Utilities",
+]
+
+[project.scripts]
+scrollback = "claude_scrollback.__main__:main"
+
+[tool.setuptools.packages.find]
+include = ["claude_scrollback*"]

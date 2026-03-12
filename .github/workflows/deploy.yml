@@ -29,7 +29,7 @@ jobs:
           python-version: "3.x"
 
       - name: Build static site
-        run: python viewer.py example/projects/ _site/
+        run: python -m claude_scrollback example/projects/ --build _site/ --no-browser
 
       - uses: actions/configure-pages@v4
 
