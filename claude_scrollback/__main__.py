@@ -99,7 +99,7 @@ def cmd_view(args):
         print(f"Generating {out} ...")
         generate_html(src, out)
         url = out.resolve().as_uri()
-        if not args.no_browser:
+        if not args.no_open:
             webbrowser.open(url)
         else:
             print(f"Open: {url}")
@@ -112,7 +112,7 @@ def cmd_view(args):
         sys.exit(1)
 
     url = f"http://localhost:{args.port}"
-    if not args.no_browser:
+    if not args.no_open:
         open_browser(url)
     run_server(sessions_dir, args.port)
 
@@ -159,8 +159,8 @@ def main():
         help="session file (.jsonl), sessions dir, or project dir "
              "(default: ~/.claude/projects/)",
     )
-    p_view.add_argument("--port", type=int, default=8080, help="port (default: 8080)")
-    p_view.add_argument("--no-browser", action="store_true", help="don't open browser")
+    p_view.add_argument("-p", "--port", type=int, default=8080, help="port (default: 8080)")
+    p_view.add_argument("-n", "--no-open", action="store_true", help="don't open browser")
 
     # generate
     p_gen = sub.add_parser(
