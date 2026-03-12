@@ -108,6 +108,8 @@ Each session page shows:
 
 The index page lists all sessions sorted newest-first with a live filter box and per-session metadata pills.
 
+> **Note:** Session transcripts include everything shown to Claude during the conversation — file contents, command output, environment details, and more. Review before sharing or publishing.
+
 ## Linking sessions to commits
 
 Include the session ID as a git trailer when committing AI-assisted work:
