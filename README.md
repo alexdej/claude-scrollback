@@ -1,8 +1,8 @@
 # scrollback
 
-A lightweight viewer for [Claude Code](https://claude.ai/claude-code) session transcripts. Converts `.jsonl` session files into readable, interactive HTML — with a built-in server for browsing or a static site generator for archiving.
+A lightweight viewer for [Claude Code](https://claude.ai/claude-code) session transcripts. Converts `.jsonl` session files into readable, interactive HTML — with a built-in server for browsing and a static site generator for archiving.
 
-Positioned as the one you reach for when you just want a quick peek, with no heavy dependencies or file watchers. Pure Python stdlib.
+Pure python, no dependencies to install.
 
 ## Install
 
@@ -33,7 +33,7 @@ python generator.py <sessions-dir/>
 # Browse all your Claude Code sessions (uses ~/.claude/projects/ automatically)
 scrollback
 
-# Browse sessions for the current project directory
+# Browse sessions for the current Claude Code project directory
 scrollback .
 
 # Browse sessions for a specific project
@@ -44,6 +44,8 @@ scrollback path/to/session.jsonl
 ```
 
 All directory modes start a local server and open your browser automatically.
+
+`scrollback` is installed by `pip install claude-scrollback`. If you're running from a clone without installing, use `python -m claude_scrollback` in place of `scrollback` throughout.
 
 ### Options
 
