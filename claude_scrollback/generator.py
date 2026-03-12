@@ -562,7 +562,8 @@ def generate_html(jsonl_path, out_path=None):
     .session-id-row {{ display: flex; align-items: center; gap: 6px; }}
     .session-id-row .session-value {{ white-space: nowrap; overflow: hidden; text-overflow: ellipsis; word-break: normal; }}
     .session-resume {{ grid-column: 1 / -1; }}
-    .resume-cmd {{ font-size: 12px; }}
+    .resume-cmds {{ display: flex; flex-wrap: wrap; gap: 6px; }}
+    .resume-cmd {{ display: flex; align-items: center; gap: 6px; background: var(--code-bg); border: 1px solid var(--border); border-radius: 4px; padding: 4px 10px; font-family: var(--font-mono); font-size: 12px; color: var(--text); }}
     .copy-btn {{
       flex-shrink: 0;
       background: var(--surface2);
@@ -934,14 +935,21 @@ def generate_html(jsonl_path, out_path=None):
     </div>
     {(
       '<div class="session-field session-resume">'
-      '<span class="session-label">Resume</span>'
-      '<div class="session-id-row">'
-      '<span class="session-value resume-cmd" title="' + escape(f"cd {cwd} && claude --resume {session_id}") + '">'
-      + escape(f"cd {cwd} && claude --resume {session_id}") +
-      '</span>'
-      '<button class="copy-btn" onclick="copyText(this, \'' + escape(f"cd {cwd} && claude --resume {session_id}") + '\')">📋</button>'
+      '<span class="session-label">Resume in Claude Code</span>'
+      '<div class="resume-cmds">'
+      + (
+        '<div class="resume-cmd">'
+        + escape(f"cd {cwd}") +
+        '<button class="copy-btn" onclick="copyText(this, \'' + escape(f"cd {cwd}") + '\')">📋</button>'
+        '</div>'
+        if cwd else ''
+      ) +
+      '<div class="resume-cmd">'
+      + escape(f"claude --resume {session_id}") +
+      '<button class="copy-btn" onclick="copyText(this, \'' + escape(f"claude --resume {session_id}") + '\')">📋</button>'
+      '</div>'
       '</div></div>'
-    ) if cwd and session_id else ''}
+    ) if session_id else ''}
   </div>
 
   <div id="conversation">
