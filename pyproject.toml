@@ -21,7 +21,7 @@ classifiers = [
 ]
 
 [project.scripts]
-scrollback = "claude_scrollback.__main__:main"
+claude-scrollback = "claude_scrollback.__main__:main"
 
 [tool.setuptools.packages.find]
 include = ["claude_scrollback*"]

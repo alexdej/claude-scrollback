@@ -84,7 +84,7 @@ def open_browser(url: str, delay: float = 0.4):
 
 def main():
     parser = argparse.ArgumentParser(
-        prog="scrollback",
+        prog="claude-scrollback",
         description="Lightweight viewer for Claude Code session transcripts.",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""

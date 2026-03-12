@@ -31,26 +31,30 @@ python generator.py <sessions-dir/>
 
 ```bash
 # Browse all your Claude Code sessions (uses ~/.claude/projects/ automatically)
-scrollback
+claude-scrollback
 
 # Browse sessions for the current Claude Code project directory
-scrollback .
+claude-scrollback .
 
 # Browse sessions for a specific project
-scrollback ~/projects/myapp
+claude-scrollback ~/projects/myapp
 
 # View a single session file
-scrollback path/to/session.jsonl
+claude-scrollback path/to/session.jsonl
 ```
 
 All directory modes start a local server and open your browser automatically.
 
-`scrollback` is installed by `pip install claude-scrollback`. If you're running from a clone without installing, use `python -m claude_scrollback` in place of `scrollback` throughout.
+`claude-scrollback` is the command installed by `pip install claude-scrollback`. If you're running from a clone without installing, use `python -m claude_scrollback` in place of `claude-scrollback` throughout. Add a shell alias if you want something shorter:
+
+```bash
+alias sb='claude-scrollback'
+```
 
 ### Options
 
 ```
-scrollback [path] [--port PORT] [--no-browser] [--build [OUTDIR]]
+claude-scrollback [path] [--port PORT] [--no-browser] [--build [OUTDIR]]
 
 path            .jsonl file, sessions directory, or project directory
                 default: ~/.claude/projects/
@@ -64,12 +68,12 @@ path            .jsonl file, sessions directory, or project directory
 ### Examples
 
 ```bash
-scrollback                          # all projects, port 8080, opens browser
-scrollback . --port 9000            # current project, custom port
-scrollback . --no-browser           # start server without opening browser
-scrollback . --build                # generate static HTML to ./_site/
-scrollback . --build ~/my-archive/  # generate to a custom directory
-scrollback session.jsonl            # convert single file, open in browser
+claude-scrollback                          # all projects, port 8080, opens browser
+claude-scrollback . --port 9000            # current project, custom port
+claude-scrollback . --no-browser           # start server without opening browser
+claude-scrollback . --build                # generate static HTML to ./_site/
+claude-scrollback . --build ~/my-archive/  # generate to a custom directory
+claude-scrollback session.jsonl            # convert single file, open in browser
 ```
 
 ### Path resolution
