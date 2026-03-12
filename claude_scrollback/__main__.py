@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
 claude-scrollback CLI
-Usage: scrollback [path] [options]
-       python -m claude_scrollback [path] [options]
+Usage: claude-scrollback <command> [path] [options]
+       python -m claude_scrollback <command> [path] [options]
 """
 
 import sys
@@ -22,7 +22,7 @@ def map_project_to_sessions(project_path: Path) -> Path:
     """
     Map a project directory to its ~/.claude/projects/ entry.
     Claude Code encodes the path by replacing : / \\ with -.
-    e.g. C:\\Users\\alex\\Projects\\myapp → C--Users-alex-Projects-myapp
+    e.g. C:\\Users\\alex\\Projects\\myapp -> C--Users-alex-Projects-myapp
     """
     path_str = str(project_path.resolve())
     mapped = path_str.replace("\\", "-").replace("/", "-").replace(":", "-")
@@ -34,9 +34,8 @@ def find_sessions_dir(path_str: str) -> Path:
     Given a path string, return the sessions directory to use.
 
     Resolution order:
-      1. Path has .jsonl files directly → use as-is
-      2. Path has .jsonl files recursively → use as-is (projects root)
-      3. Otherwise → map to ~/.claude/projects/<encoded>/
+      1. Path has .jsonl files directly or recursively -> use as-is
+      2. Otherwise -> map to ~/.claude/projects/<encoded>/
     """
     path = Path(path_str).resolve()
     if not path.exists():
@@ -59,14 +58,21 @@ def find_sessions_dir(path_str: str) -> Path:
 
 
 def default_sessions_dir() -> Path:
-    """Return ~/.claude/projects/ if it exists."""
+    """Return ~/.claude/projects/ if it exists and has sessions."""
     default = Path.home() / ".claude" / "projects"
     if default.exists() and any(default.rglob("*.jsonl")):
         return default
     raise FileNotFoundError(
         "~/.claude/projects/ not found or empty.\n"
-        "Pass a path: scrollback <project-or-sessions-dir>"
+        "Pass a path: claude-scrollback view <project-or-sessions-dir>"
     )
+
+
+def resolve(path_arg):
+    """Resolve optional path arg to a sessions directory."""
+    if path_arg:
+        return find_sessions_dir(path_arg)
+    return default_sessions_dir()
 
 
 def open_browser(url: str, delay: float = 0.4):
@@ -80,49 +86,10 @@ def open_browser(url: str, delay: float = 0.4):
     threading.Thread(target=_open, daemon=True).start()
 
 
-# ── Main ───────────────────────────────────────────────────────────────────
+# ── Subcommands ────────────────────────────────────────────────────────────
 
-def main():
-    parser = argparse.ArgumentParser(
-        prog="claude-scrollback",
-        description="Lightweight viewer for Claude Code session transcripts.",
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="""
-examples:
-  scrollback                        # browse all projects in ~/.claude/projects/
-  scrollback .                      # sessions for the current project
-  scrollback ~/projects/myapp       # sessions for a specific project
-  scrollback ~/path/to/sessions/    # use a sessions directory directly
-  scrollback session.jsonl          # view a single session file
-  scrollback . --build              # generate static HTML to ./_site/
-  scrollback . --build ~/site/      # generate static HTML to a custom path
-  scrollback . --port 9000          # custom port
-  scrollback . --no-browser         # don't open browser automatically
-""",
-    )
-    parser.add_argument(
-        "path",
-        nargs="?",
-        help="session file (.jsonl), sessions directory, or project directory "
-             "(default: ~/.claude/projects/)",
-    )
-    parser.add_argument(
-        "--port", type=int, default=8080,
-        help="server port (default: 8080)",
-    )
-    parser.add_argument(
-        "--no-browser", action="store_true",
-        help="don't open browser automatically",
-    )
-    parser.add_argument(
-        "--build", nargs="?", const="_site", metavar="OUTDIR",
-        help="generate static HTML instead of serving "
-             "(default output dir: _site/)",
-    )
-
-    args = parser.parse_args()
-
-    # ── Single file mode ───────────────────────────────────────────────────
+def cmd_view(args):
+    # Single file
     if args.path and Path(args.path).is_file():
         src = Path(args.path)
         if src.suffix != ".jsonl":
@@ -138,33 +105,84 @@ examples:
             print(f"Open: {url}")
         return
 
-    # ── Resolve sessions directory ─────────────────────────────────────────
     try:
-        if args.path:
-            sessions_dir = find_sessions_dir(args.path)
-        else:
-            sessions_dir = default_sessions_dir()
+        sessions_dir = resolve(args.path)
     except FileNotFoundError as e:
         print(f"Error: {e}")
         sys.exit(1)
 
-    # ── Build mode ─────────────────────────────────────────────────────────
-    if args.build is not None:
-        out_dir = Path(args.build)
-        print(f"Building static site from {sessions_dir} -> {out_dir} ...")
-        process_directory(sessions_dir, out_dir)
-        url = (out_dir / "index.html").resolve().as_uri()
-        if not args.no_browser:
-            webbrowser.open(url)
-        else:
-            print(f"Open: {url}")
-        return
-
-    # ── Serve mode (default) ───────────────────────────────────────────────
     url = f"http://localhost:{args.port}"
     if not args.no_browser:
         open_browser(url)
     run_server(sessions_dir, args.port)
+
+
+def cmd_generate(args):
+    if args.path and Path(args.path).is_file():
+        src = Path(args.path)
+        if src.suffix != ".jsonl":
+            print(f"Error: {src} is not a .jsonl file")
+            sys.exit(1)
+        out = src.with_suffix(".html")
+        generate_html(src, out)
+        print(f"Written to {out}")
+        return
+
+    try:
+        sessions_dir = resolve(args.path)
+    except FileNotFoundError as e:
+        print(f"Error: {e}")
+        sys.exit(1)
+
+    out_dir = Path(args.output)
+    print(f"Generating static site from {sessions_dir} -> {out_dir} ...")
+    process_directory(sessions_dir, out_dir)
+
+
+# ── Main ───────────────────────────────────────────────────────────────────
+
+def main():
+    parser = argparse.ArgumentParser(
+        prog="claude-scrollback",
+        description="Lightweight viewer for Claude Code session transcripts.",
+    )
+    sub = parser.add_subparsers(dest="command", metavar="command")
+    sub.required = True
+
+    # view
+    p_view = sub.add_parser(
+        "view",
+        help="start a local server and open the session browser",
+    )
+    p_view.add_argument(
+        "path", nargs="?",
+        help="session file (.jsonl), sessions dir, or project dir "
+             "(default: ~/.claude/projects/)",
+    )
+    p_view.add_argument("--port", type=int, default=8080, help="port (default: 8080)")
+    p_view.add_argument("--no-browser", action="store_true", help="don't open browser")
+
+    # generate
+    p_gen = sub.add_parser(
+        "generate",
+        help="generate static HTML from session files",
+    )
+    p_gen.add_argument(
+        "path", nargs="?",
+        help="session file (.jsonl), sessions dir, or project dir "
+             "(default: ~/.claude/projects/)",
+    )
+    p_gen.add_argument(
+        "output", nargs="?", default="_site",
+        help="output directory (default: _site/)",
+    )
+
+    args = parser.parse_args()
+
+    if args.command == "view":
+        cmd_view(args)
+    elif args.command == "generate":
+        cmd_generate(args)
 
 
 if __name__ == "__main__":

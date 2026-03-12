@@ -8,28 +8,31 @@ Pure python, no dependencies to install.
 
 ## Install
 
+pip (recommended)
 ```bash
 pip install claude-scrollback
 ```
 
-Or clone and run without installing:
+from source:
 
 ```bash
 git clone https://github.com/alexdej/claude-scrollback
-cd claude-scrollback
-python -m claude_scrollback [args]
+pip install claude_scrollback
 ```
 
-Or grab just `claude_scrollback/generator.py` — it's self-contained and works standalone:
+Or use `generator.py` standalone:
 
 ```bash
-python generator.py <session.jsonl>
-python generator.py <sessions-dir/>
+git clone https://github.com/alexdej/claude-scrollback
+cd claude_scrollback
+python claude_scrollback/generator.py <dir>
 ```
 
 ## Usage
 
 ### Quick start
+
+Installation installs a `claude-scrollback` command.
 
 ```bash
 # Browse all your Claude Code sessions (uses ~/.claude/projects/ automatically)
