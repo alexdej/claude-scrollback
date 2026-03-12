@@ -4,6 +4,8 @@ A lightweight viewer for [Claude Code](https://claude.ai/claude-code) session tr
 
 Pure python, no dependencies to install.
 
+**[Live demo →](https://alexdej.github.io/claude-scrollback/)**
+
 ## Install
 
 ```bash
