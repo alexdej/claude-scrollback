@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "claude-scrollback"
-version = "0.1.0"
+version = "1.0.0"
 description = "Lightweight viewer for Claude Code session transcripts"
 readme = "README.md"
 license = "MIT"

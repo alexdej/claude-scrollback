@@ -1,4 +1,4 @@
-# scrollback
+# claude-scrollback
 
 A lightweight viewer for [Claude Code](https://claude.ai/claude-code) session transcripts. Converts `.jsonl` session files into readable, interactive HTML — with a built-in server for browsing and a static site generator for archiving.
 
