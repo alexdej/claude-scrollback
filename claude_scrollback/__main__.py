@@ -5,8 +5,10 @@ Usage: claude-scrollback <command> [path] [options]
        python -m claude_scrollback <command> [path] [options]
 """
 
+import re
 import sys
 import argparse
+import tempfile
 import webbrowser
 import threading
 import time
@@ -117,6 +119,51 @@ def cmd_view(args):
     run_server(sessions_dir, args.port)
 
 
+
+UUID_RE = re.compile(
+    r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}",
+    re.IGNORECASE,
+)
+
+def cmd_show(args):
+    # Collect UUIDs from positional arg and/or piped stdin
+    uuids = []
+    if args.uuid:
+        if UUID_RE.fullmatch(args.uuid):
+            uuids.append(args.uuid.lower())
+        else:
+            print(f"Error: '{args.uuid}' is not a valid UUID")
+            sys.exit(1)
+
+    if not sys.stdin.isatty():
+        text = sys.stdin.read()
+        for m in UUID_RE.finditer(text):
+            u = m.group(0).lower()
+            if u not in uuids:
+                uuids.append(u)
+
+    if not uuids:
+        print("Error: provide a UUID argument or pipe text containing UUIDs")
+        sys.exit(1)
+
+    projects = Path.home() / ".claude" / "projects"
+    opened = 0
+    for uuid in uuids:
+        matches = list(projects.rglob(f"{uuid}.jsonl"))
+        if not matches:
+            print(f"Warning: no session found for {uuid}")
+            continue
+        for src in matches:
+            out = Path(tempfile.mkdtemp()) / (src.stem + ".html")
+            generate_html(src, out)
+            webbrowser.open(out.resolve().as_uri())
+            print(f"Opened: {src.name}")
+            opened += 1
+
+    if opened == 0:
+        sys.exit(1)
+
+
 def cmd_generate(args):
     if args.path and Path(args.path).is_file():
         src = Path(args.path)
@@ -162,6 +209,16 @@ def main():
     p_view.add_argument("-p", "--port", type=int, default=8080, help="port (default: 8080)")
     p_view.add_argument("-n", "--no-open", action="store_true", help="don't open browser")
 
+    # show
+    p_show = sub.add_parser(
+        "show",
+        help="find and open a session by UUID (also accepts piped text)",
+    )
+    p_show.add_argument(
+        "uuid", nargs="?",
+        help="session UUID (or omit and pipe text containing UUIDs)",
+    )
+
     # generate
     p_gen = sub.add_parser(
         "generate",
@@ -181,6 +238,8 @@ def main():
 
     if args.command == "view":
         cmd_view(args)
+    elif args.command == "show":
+        cmd_show(args)
     elif args.command == "generate":
         cmd_generate(args)
 

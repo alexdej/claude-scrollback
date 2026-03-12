@@ -17,15 +17,14 @@ from source:
 
 ```bash
 git clone https://github.com/alexdej/claude-scrollback
-pip install claude_scrollback
+pip install -e claude-scrollback/
 ```
 
 Or use `generator.py` standalone:
 
 ```bash
 git clone https://github.com/alexdej/claude-scrollback
-cd claude_scrollback
-python claude_scrollback/generator.py <dir>
+python claude-scrollback/claude_scrollback/generator.py <dir>
 ```
 
 ## Usage
@@ -36,16 +35,16 @@ Installation installs a `claude-scrollback` command.
 
 ```bash
 # Browse all your Claude Code sessions (uses ~/.claude/projects/ automatically)
-claude-scrollback
+claude-scrollback view
 
 # Browse sessions for the current Claude Code project directory
-claude-scrollback .
+claude-scrollback view .
 
 # Browse sessions for a specific project
-claude-scrollback ~/projects/myapp
+claude-scrollback view ~/projects/myapp
 
 # View a single session file
-claude-scrollback path/to/session.jsonl
+claude-scrollback view path/to/session.jsonl
 ```
 
 All directory modes start a local server and open your browser automatically.
@@ -56,38 +55,60 @@ All directory modes start a local server and open your browser automatically.
 alias sb='claude-scrollback'
 ```
 
-### Options
+### Subcommands
 
 ```
-claude-scrollback [path] [--port PORT] [--no-browser] [--build [OUTDIR]]
+claude-scrollback view [path] [-p PORT] [-n]
+claude-scrollback show [uuid]
+claude-scrollback generate [path] [-o OUTDIR]
 
-path            .jsonl file, sessions directory, or project directory
-                default: ~/.claude/projects/
-
---port PORT     server port (default: 8080)
---no-browser    don't open browser automatically
---build [OUTDIR] generate static HTML instead of serving
-                 default output: _site/
+view      start a local server and open the session browser
+show      find and open a session by UUID
+generate  generate static HTML from session files
 ```
 
-### Examples
+### view
 
 ```bash
-claude-scrollback                          # all projects, port 8080, opens browser
-claude-scrollback . --port 9000            # current project, custom port
-claude-scrollback . --no-browser           # start server without opening browser
-claude-scrollback . --build                # generate static HTML to ./_site/
-claude-scrollback . --build ~/my-archive/  # generate to a custom directory
-claude-scrollback session.jsonl            # convert single file, open in browser
+claude-scrollback view                        # all projects, port 8080, opens browser
+claude-scrollback view . -p 9000             # current project, custom port
+claude-scrollback view . -n                  # start server without opening browser
+claude-scrollback view session.jsonl         # convert single file, open in browser
 ```
+
+Options: `-p/--port PORT` (default: 8080), `-n/--no-open`
+
+### show
+
+Find a session by UUID and open it in the browser. Searches `~/.claude/projects/` automatically.
+
+```bash
+claude-scrollback show abc123de-f456-7890-abcd-ef1234567890
+
+# Pipe in any text containing UUIDs — all matching sessions are opened
+git log --format="%B" | claude-scrollback show
+git show HEAD | claude-scrollback show
+```
+
+### generate
+
+Generate a static HTML site from session files.
+
+```bash
+claude-scrollback generate                        # all projects -> ./_site/
+claude-scrollback generate . -o ~/my-archive/    # current project, custom output dir
+claude-scrollback generate session.jsonl          # single file -> session.html
+```
+
+Options: `-o/--out-dir DIR` (default: `_site/`)
 
 ### Path resolution
 
 When you pass a project directory (like `.`), scrollback maps it to the corresponding Claude Code sessions folder automatically. Claude Code stores sessions under `~/.claude/projects/` with the project path encoded as the directory name (colons, slashes, and backslashes replaced with `-`):
 
 ```
-~/projects/myapp  →  ~/.claude/projects/-home-you-projects-myapp/
-C:\Users\you\myapp  →  ~/.claude/projects/C--Users-you-myapp/
+~/projects/myapp        ->  ~/.claude/projects/-home-you-projects-myapp/
+~/work/another-project  ->  ~/.claude/projects/-home-you-work-another-project/
 ```
 
 If the path you give already contains `.jsonl` files (directly or in subdirectories), it's used as-is.
@@ -104,7 +125,7 @@ Each session page shows:
 - **API errors** (rate limits, auth failures) surfaced inline
 - **Token usage** per response
 - **Session metadata**: working directory, git branch, start/end time, message and tool call counts
-- **Resume command** — one click copies `cd <project> && claude --resume <session-id>` to clipboard
+- **Resume command** — one click copies `cd <project>` and `claude --resume <session-id>` to clipboard
 
 The index page lists all sessions sorted newest-first with a live filter box and per-session metadata pills.
 
@@ -120,11 +141,19 @@ Fix authentication token refresh race condition
 Claude-Session: abc123de-f456-7890-abcd-ef1234567890
 ```
 
-The session ID is shown in the metadata card on each session page with a 📋 copy button. The resume command (also one-click copyable) lets you pick up the conversation right where it left off.
+The session ID is shown in the metadata card on each session page with a copy button. The resume command (also one-click copyable) lets you pick up the conversation right where it left off.
+
+To find and open sessions referenced in your git log:
 
 ```bash
-# Find all AI-assisted commits
-git log --grep="Claude-Session:"
+# Open all Claude-sessions from recent history
+git log --format="%B" | claude-scrollback show
+
+# Open the session from a specific commit
+git show <commit> | claude-scrollback show
+
+# Or open a session directly by UUID
+claude-scrollback show <uuid>
 ```
 
 ## Session directory layout
@@ -133,10 +162,10 @@ Claude Code organises sessions by project under `~/.claude/projects/`:
 
 ```
 ~/.claude/projects/
-  C--Users-you-projects-myapp/
+  -home-you-projects-myapp/
     abc123.jsonl
     def456.jsonl
-  -home-you-projects-other/
+  -home-you-work-another-project/
     ...
 ```
 
@@ -147,7 +176,7 @@ Claude Code organises sessions by project under `~/.claude/projects/`:
 The `example/projects/` directory contains synthetic sessions demonstrating the viewer across different scenarios. To browse them:
 
 ```bash
-scrollback example/projects/
+claude-scrollback view example/projects/
 ```
 
 ## Requirements
